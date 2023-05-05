@@ -10,6 +10,7 @@ use termion::{
     cursor::Goto,
     event::Key,
 };
+use crate::format::fmt_duration;
 
 pub struct TermionScreen<'a> {
     screen: RawTerminal<StdoutLock<'a>>,
@@ -38,7 +39,7 @@ impl<'a> TimerScreen for TermionScreen<'a> {
     fn build_timer_screen(&mut self, time_elapsed: Duration)
         -> Result<(), std::io::Error> {
         write!(self.screen, "{}", clear::All)?;
-        write!(self.screen, "{}{}", Goto(1, 1), time_elapsed.as_secs())?;
+        write!(self.screen, "{}{}", Goto(1, 1), fmt_duration(time_elapsed))?;
         write!(self.screen, "{}{}", Goto(1, 2), "[Space]: Start/Stop timer")?;
         write!(self.screen, "{}{}", Goto(1, 3), termion::cursor::Hide)?;
         Ok(())

@@ -22,3 +22,12 @@ pub fn fmt_time(secs: u64) -> String {
         )
     }
 }
+
+pub fn fmt_duration(duration: Duration) -> String {
+    let secs = duration.as_secs();
+    let seconds = secs % 60;
+    let minutes = (secs / 60) % 60;
+    let hours = (secs / 60) / 60;
+    let ms = (duration.as_millis() - secs as u128 * 1000) / 10;
+    format!("{:0>2}:{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds, ms)
+}
