@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 pub fn fmt_time(secs: u64) -> String {
     if secs < 60 {
         format!("00:{:0>2}", secs)
