@@ -1,4 +1,5 @@
-use crate::terminal::CommandRecvError;
+use crate::prelude::*;
+
 use crate::stopwatch;
 use crate::terminal;
 
@@ -12,7 +13,7 @@ pub struct StopwatchApp<TimerScreen: terminal::TimerScreen> {
 }
 
 impl<TS: terminal::TimerScreen> StopwatchApp<TS> {
-    pub fn new() -> Result<Self, std::io::Error> {
+    pub fn new() -> Result<Self> {
         // Setup raw mode for terminal
         let terminal = TS::init()?;
 
@@ -26,18 +27,11 @@ impl<TS: terminal::TimerScreen> StopwatchApp<TS> {
         })
     }
 
-    pub fn update(&mut self) -> Result<(), CommandRecvError> {
+    pub fn update(&mut self) -> Result<()> {
         self.terminal.build_timer_screen(self.stopwatch.time_elapsed())?;
         self.terminal.flush()?;
 
-        self.terminal.pop_cmd().map(|cmd| self.handle_command(cmd))
-            .or_else(|err| {
-                match err {
-                    CommandRecvError::NotACommand
-                        | CommandRecvError::TryRecvError(_) => Ok(()),
-                    _ => Err(err),
-                }
-            })?;
+        self.terminal.pop_cmd()?.map(|cmd| self.handle_command(cmd));
 
         std::thread::sleep(Duration::from_millis(60));
         Ok(())

@@ -1,4 +1,5 @@
-use crate::terminal::{TimerCommand, TimerScreen, CommandRecvError};
+use crate::prelude::*;
+use crate::terminal::{TimerCommand, TimerScreen};
 use std::io::{ stdout, Write, StdoutLock, stdin };
 use std::sync::mpsc::{channel, Receiver};
 use std::time::Duration;
@@ -14,12 +15,12 @@ use crate::format::fmt_duration;
 
 pub struct TermionScreen<'a> {
     screen: RawTerminal<StdoutLock<'a>>,
-    cmd_reciever: Receiver<Result<Key, std::io::Error>>,
+    cmd_reciever: Receiver<core::result::Result<Key, std::io::Error>>,
 }
 
 
 impl<'a> TimerScreen for TermionScreen<'a> {
-    fn init() -> Result<Self, std::io::Error> {
+    fn init() -> Result<Self> {
         let (tx, rx) = channel();
         let _join_handle = std::thread::spawn(move || {
             loop {
@@ -37,7 +38,7 @@ impl<'a> TimerScreen for TermionScreen<'a> {
     }
 
     fn build_timer_screen(&mut self, time_elapsed: Duration)
-        -> Result<(), std::io::Error> {
+        -> Result<()> {
         write!(self.screen, "{}", clear::All)?;
         write!(self.screen, "{}{}", Goto(1, 1), fmt_duration(time_elapsed))?;
         write!(self.screen, "{}{}", Goto(1, 2), "[Space]: Start/Stop timer")?;
@@ -45,13 +46,19 @@ impl<'a> TimerScreen for TermionScreen<'a> {
         Ok(())
     }
 
-    fn pop_cmd(&self) -> Result<TimerCommand, CommandRecvError> {
-        TermionScreen::<'a>::handle_key(self.cmd_reciever.try_recv()??)
-            .ok_or(CommandRecvError::NotACommand)
+    fn pop_cmd(&self) -> Result<Option<TimerCommand>> {
+        use std::sync::mpsc::TryRecvError;
+        match self.cmd_reciever.try_recv() {
+            Err(TryRecvError::Empty) => Ok(None),
+            Err(TryRecvError::Disconnected) =>
+                Err(TryRecvError::Disconnected.into()),
+            Ok(key) => Ok(TermionScreen::<'a>::handle_key(key?))
+        }
     }
 
-    fn flush(&mut self) -> Result<(), std::io::Error> {
-        self.screen.flush()
+    fn flush(&mut self) -> Result<()> {
+        self.screen.flush()?;
+        Ok(())
     }
 }
 
